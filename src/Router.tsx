@@ -8,6 +8,7 @@ import { useEntity } from '@backstage/plugin-catalog-react';
 
 const GITLAB_ANNOTATION_PROJECT_ID = 'gitlab.com/project-id';
 export const GITLAB_ANNOTATION_PROJECT_SLUG = 'gitlab.com/project-slug';
+export const GITLAB_ANNOTATION_SOURCE_LOCATION = 'backstage.io/source-location';
 
 export const isGitlabAvailable = (entity: Entity) =>
 isGitlabProjectIDAnnotationAvailable(entity) || isGitlabSlugAnnotationAvailable(entity)
@@ -24,9 +25,21 @@ type Props = {
 	entity?: Entity;
 };
 
+function tryToGetProjectSlug(entity: Entity){
+	if (entity.metadata
+		&& entity.metadata.annotations
+		&& (!entity.metadata.annotations[GITLAB_ANNOTATION_PROJECT_SLUG]
+			&& !entity.metadata.annotations[GITLAB_ANNOTATION_PROJECT_ID])) {
+		const sourceLocation: string = entity.metadata.annotations[GITLAB_ANNOTATION_SOURCE_LOCATION];
+		const projectName: string = sourceLocation.substring(0, sourceLocation.length - 1 )
+			.replace('url:https://gitlab.com/', '');
+		entity.metadata.annotations[GITLAB_ANNOTATION_PROJECT_SLUG] = projectName;
+	}
+}
+
 export const Router = (_props: Props) => {
 	const { entity } = useEntity();
-
+	tryToGetProjectSlug(entity);
 	if (
 		isGitlabAvailable(entity)
 	) {
